@@ -34,9 +34,6 @@ typedef struct {
 	GstElement *pipe;
 	obs_source_t *source;
 	obs_data_t *settings;
-	gint64 frame_count;
-	gint64 audio_count;
-	guint timeout_id;
 	GThread *thread;
 	GMainLoop *loop;
 	GMutex mutex;
@@ -46,23 +43,10 @@ typedef struct {
 	GCond draw_cond;
 
 	gs_texture_t *texture;
-	/* void* last_handle; */
-
-	EGLDisplay eglDisplay;
-	EGLContext eglContext;
-	EGLSurface eglSurface;
-	EGLConfig eglConfig;
 	GLuint textureId;
-	GLuint videoTextureId;
-	unsigned program;
-	unsigned textureUniform;
-	GstVideoFrame videoFrame;
-	gboolean videoFrameMapped;
 	int width;
 	int height;
 	GstSample* sample;
-    GLuint fbo_handle;
-    GLuint depth;
 } data_t;
 
 static GstGLDisplay *gstGLDisplay = NULL;
@@ -112,7 +96,7 @@ static void _gl_mem_copy(GstGLContext *context, gpointer user_data)
 				    GST_GL_TEXTURE_TARGET_2D, GST_GL_RGBA,
 				    data->width, data->height);
 	/* glBindTexture(out_tex_target, 0); */
-	gst_gl_context_swap_buffers(context);
+	/* gst_gl_context_swap_buffers(context); */
     /* obs_leave_graphics(); */
 	/* g_mutex_lock(&data->draw_mutex); */
 	/* g_cond_signal(&data->draw_cond); */
@@ -227,13 +211,10 @@ static void create_pipeline(data_t *data)
 {
     data->texture = NULL;
     data->textureId = 0;
-    data->program = 0;
-    data->textureUniform = 0;
-    data->videoFrameMapped = FALSE;
 
 	GError *err = NULL;
 	const gchar *pipeline =
-		"wpevideosrc location=https://webkit.org/blog-files/3d-transforms/poster-circle.html ! tee name=t t. ! queue ! appsink name=video-sink";
+		"wpesrc location=https://webkit.org/blog-files/3d-transforms/poster-circle.html ! queue ! appsink name=video-sink";
 	data->pipe = gst_parse_launch(pipeline, &err);
 
 	if (err != NULL) {
@@ -248,9 +229,6 @@ static void create_pipeline(data_t *data)
 		gst_bin_get_by_name(GST_BIN(data->pipe), "video-sink");
 	gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &video_cbs, data, NULL);
 	gst_object_unref(appsink);
-
-	data->frame_count = 0;
-	data->audio_count = 0;
 
 	GstBus *bus = gst_element_get_bus(data->pipe);
 	gst_bus_add_watch(bus, bus_callback, data);
@@ -289,11 +267,6 @@ static gpointer _start(gpointer user_data)
 
 		gst_object_unref(data->pipe);
 		data->pipe = NULL;
-	}
-
-	if (data->timeout_id != 0) {
-		g_source_remove(data->timeout_id);
-		data->timeout_id = 0;
 	}
 
 	g_main_loop_unref(data->loop);
