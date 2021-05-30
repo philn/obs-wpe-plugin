@@ -102,17 +102,18 @@ static void _gl_mem_copy(GstGLContext *context, gpointer user_data)
 	GstBuffer *buffer = gst_sample_get_buffer(data->sample);
 	GstMemory *mem = gst_buffer_peek_memory(buffer, 0);
 	GstGLMemory *gl_mem = GST_GL_MEMORY_CAST(mem);
-	unsigned out_tex_target =
-		gst_gl_texture_target_to_gl(GST_GL_TEXTURE_TARGET_2D);
+	/* unsigned out_tex_target = */
+	/* 	gst_gl_texture_target_to_gl(GST_GL_TEXTURE_TARGET_2D); */
 
-	obs_enter_graphics();
-	glBindTexture(out_tex_target, data->textureId);
+	/* obs_enter_graphics(); */
+	/* glBindTexture(out_tex_target, data->textureId); */
 
 	gst_gl_memory_copy_teximage(gl_mem, data->textureId,
 				    GST_GL_TEXTURE_TARGET_2D, GST_GL_RGBA,
 				    data->width, data->height);
-	glBindTexture(out_tex_target, 0);
-	obs_leave_graphics();
+	/* glBindTexture(out_tex_target, 0); */
+	gst_gl_context_swap_buffers(context);
+    /* obs_leave_graphics(); */
 	/* g_mutex_lock(&data->draw_mutex); */
 	/* g_cond_signal(&data->draw_cond); */
 	/* g_mutex_unlock(&data->draw_mutex); */
@@ -132,14 +133,14 @@ static GstFlowReturn video_new_sample(GstAppSink *appsink, gpointer user_data)
 	data->width = GST_VIDEO_INFO_WIDTH(&videoInfo);
 	data->height = GST_VIDEO_INFO_HEIGHT(&videoInfo);
 
-    if (data->videoFrameMapped)
-        gst_video_frame_unmap(&data->videoFrame);
+    /* if (data->videoFrameMapped) */
+    /*     gst_video_frame_unmap(&data->videoFrame); */
     if (data->sample)
         gst_sample_unref(data->sample);
 
     data->sample = sample;
-    data->videoFrameMapped = gst_video_frame_map(&data->videoFrame, &videoInfo, buffer, GST_MAP_READ | GST_MAP_GL);
-    data->videoTextureId = *(GLuint*)(data->videoFrame.data[0]);
+    /* data->videoFrameMapped = gst_video_frame_map(&data->videoFrame, &videoInfo, buffer, GST_MAP_READ | GST_MAP_GL); */
+    /* data->videoTextureId = *(GLuint*)(data->videoFrame.data[0]); */
     /* gst_printerrln("tex: %u", data->videoTextureId); */
 
     obs_enter_graphics();
